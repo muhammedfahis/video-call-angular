@@ -1,0 +1,10 @@
+<div class="outer-container">
+    <div>
+        <div class="room" (click)="onClickRoom(room)" *ngFor="let room of rooms;let i = index">
+            {{room.room_id}}
+        </div>
+    </div>
+    <div class="create-button">
+        <button (click)="onCreateNewRoom()">Create Room</button>
+    </div>
+</div>
