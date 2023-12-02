@@ -17,7 +17,7 @@ export class SocketService {
     private http: HttpClient,
     private router: Router,
   ) {
-    this.socket = io('http://18.222.248.59:4000'); 
+    this.socket = io('https://video.evara.tk'); 
     this.peer = new Peer(
       {
         host: '18.222.248.59',
