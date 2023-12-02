@@ -17,10 +17,10 @@ export class SocketService {
     private http: HttpClient,
     private router: Router,
   ) {
-    this.socket = io('http://18.222.248.59:4000'); 
+    this.socket = io('http://localhost:4000'); 
     this.peer = new Peer(
       {
-        host: '18.222.248.59',
+        host: '127.0.0.1',
         port: 4000,
         path: '/peerjs',
         config: {
