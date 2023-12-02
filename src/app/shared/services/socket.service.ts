@@ -18,6 +18,7 @@ export class SocketService {
     private router: Router,
   ) {
     this.socket = io('https://video-call-nodejs-seven.vercel.app'); 
+    
     this.peer = new Peer(
       {
         host: 'https://video-call-nodejs-seven.vercel.app',
