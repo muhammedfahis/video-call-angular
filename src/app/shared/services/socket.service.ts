@@ -21,7 +21,6 @@ export class SocketService {
     this.peer = new Peer(
       {
         host: 'video.evara.tk',
-        port: 4000,
         path: '/peerjs',
         config: {
           'iceServers': [
