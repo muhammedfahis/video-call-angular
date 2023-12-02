@@ -20,7 +20,7 @@ export class SocketService {
     this.socket = io('https://video.evara.tk'); 
     this.peer = new Peer(
       {
-        host: 'https://video.evara.tk',
+        host: 'video.evara.tk',
         port: 4000,
         path: '/peerjs',
         config: {
