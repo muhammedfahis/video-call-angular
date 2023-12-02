@@ -17,10 +17,10 @@ export class SocketService {
     private http: HttpClient,
     private router: Router,
   ) {
-    this.socket = io('https://video-call-nodejs-seven.vercel.app/'); 
+    this.socket = io('https://video-call-nodejs-seven.vercel.app'); 
     this.peer = new Peer(
       {
-        host: 'https://video-call-nodejs-seven.vercel.app/',
+        host: 'https://video-call-nodejs-seven.vercel.app',
         port: 4000,
         path: '/peerjs',
         config: {
