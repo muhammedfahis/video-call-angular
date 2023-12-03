@@ -1,6 +1,6 @@
-<div class="header">
+<!-- <div class="header">
     <div class="logo">
-        <h3>Video Chat</h3> <!-- Corrected the closing tag for h3 -->
+        <h3>Video Chat</h3>
     </div>
 </div>
 <div class="main">
@@ -35,4 +35,18 @@
             </div>
         </div>
     </div>
-</div>
+</div> -->
+<div class="video-grid">
+    <div *ngFor="let video of videos">
+      <span *ngIf="video.userId !== currentUserId; else currentUserVideoLabel">{{ video.userId }}</span>
+      <ng-template #currentUserVideoLabel>
+        <span>You</span>
+      </ng-template>
+      <video
+        [srcObject]="video.srcObject"
+        (loadedmetadata)="onLoadedMetadata($event)"
+        [muted]="video.muted"
+      >
+      </video>
+    </div>
+  </div>

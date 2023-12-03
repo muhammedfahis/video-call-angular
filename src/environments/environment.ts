@@ -4,7 +4,7 @@
 
 export const environment = {
   production: false,
-  api:'https://video.evara.tk'
+  api:'http://localhost:4000'
 };
 
 /*
