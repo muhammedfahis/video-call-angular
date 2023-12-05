@@ -55,7 +55,7 @@ export class ChatComponent implements OnInit,AfterViewInit {
     this.socket =  this.socketService.getSocket();
     this.peer = new Peer(
       {
-        host: 'https://video.evara.tk',
+        host: 'video.evara.tk',
         path: '/peerjs',
         config: {
           'iceServers': [
