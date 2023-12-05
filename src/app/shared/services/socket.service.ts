@@ -17,11 +17,10 @@ export class SocketService {
     private http: HttpClient,
     private router: Router,
   ) {
-    this.socket = io('http://localhost:4000'); 
+    this.socket = io('https://video.evara.tk'); 
     this.peer = new Peer(
       {
-        host: '127.0.0.1',
-        port:4000,
+        host: 'https://video.evara.tk',
         path: '/peerjs',
         config: {
           'iceServers': [
