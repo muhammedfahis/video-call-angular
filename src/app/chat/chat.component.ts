@@ -1,8 +1,9 @@
-import { AfterViewInit, Component, OnInit } from '@angular/core';
+import { AfterViewInit, Component, OnDestroy, OnInit } from '@angular/core';
 import { SocketService } from '../shared/services/socket.service';
 import { UserService } from '../shared/services/user.service';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import Peer from 'peerjs';
+
 
 interface VideoElement {
   muted: boolean;
@@ -15,7 +16,7 @@ interface VideoElement {
   templateUrl: './chat.component.html',
   styleUrls: ['./chat.component.css']
 })
-export class ChatComponent implements OnInit,AfterViewInit {
+export class ChatComponent implements OnInit,AfterViewInit,OnDestroy {
   videoGrid:any;
   myVideoStream:any;
   socket:any;
@@ -23,9 +24,12 @@ export class ChatComponent implements OnInit,AfterViewInit {
   peer:any;
   joined:boolean = false;
   peerId: any;
+  user:any;
   videos: VideoElement[] = [];
   currentUserId: string = ''
-  constructor(private socketService: SocketService, private userService: UserService,private route:ActivatedRoute) { 
+  message:string = '';
+  messages:any[] = [];
+  constructor(private socketService: SocketService, private userService: UserService,private route:ActivatedRoute,private router:Router) { 
     this.route.params.subscribe(params => {
       // Retrieve the 'id' parameter value
       this.room_id = params['id'];
@@ -34,8 +38,9 @@ export class ChatComponent implements OnInit,AfterViewInit {
 
   ngOnInit(): void {
     let user_Data:any = localStorage.getItem('user_Data')
-    let user = JSON.parse(user_Data);
-    this.currentUserId = user._id
+    this.user = JSON.parse(user_Data);
+    this.currentUserId = this.user._id;
+
     
     this.initiateVideoCall();
   }
@@ -85,11 +90,8 @@ export class ChatComponent implements OnInit,AfterViewInit {
       }
     )
     this.peer.on('open', (id:any) => {
-      this.socket.emit('join-room', this.room_id, id);
+      this.socket.emit('join-room', this.room_id,id,this.currentUserId,this.user.name);
     });  
-    this.videoGrid = document.getElementById("video-grid");
-    const myVideo = document.createElement("video");
-    myVideo.muted = true;
     navigator.mediaDevices?.getUserMedia({
       audio: true,
       video: true,
@@ -99,16 +101,8 @@ export class ChatComponent implements OnInit,AfterViewInit {
       .then((stream:any) => {
         this.myVideoStream = stream;
         this.addMyVideo(stream);
-        // this.addVideoStream(myVideo, stream);
-        // this.peer.on('call', (call:any) => {      
-        //   call.answer(this.myVideoStream);
-        //   const video = document.createElement('video');
-        //   call.on('stream', (userVideoStream:any) => {
-        //   this.addVideoStream(video, userVideoStream);
-        //   });
-        // });
-        this.socket.on('user-connected', (userId:any) => {
-          this.connectToNewUser(userId, this.myVideoStream);
+        this.socket.on('user-connected', (peerId:any,userId:any) => {
+          this.connectToNewUser(peerId, this.myVideoStream);
         });
         this.socket.on('user-disconnected', (userId:any) => {
           console.log(`receiving user-disconnected event from ${userId}`)
@@ -120,12 +114,17 @@ export class ChatComponent implements OnInit,AfterViewInit {
         .then((stream) => {
           call.answer(stream);
           call.on("stream", (remoteStream:any) => {
-            // const video = document.createElement('video');
-            // this.addVideoStream(video, remoteStream);
             this.addOtherUserVideo(call.metadata.userId, remoteStream);
           }); 
         })
       });
+      this.socket.on('createMessage',(message:any,user:any) => {
+        this.messages.push({
+          user,
+          message
+        })
+        this.message = '';
+      })
   }
    addVideoStream (video:any, stream:any)  {
     video.srcObject = stream;
@@ -180,6 +179,39 @@ addOtherUserVideo(userId: string, stream: MediaStream) {
 
 onLoadedMetadata(event: Event) {
   (event.target as HTMLVideoElement).play();
+}
+onClickSendMessage() {
+  this.socket.emit('message', this.message);
+}
+
+getStyle(id:string) {
+  console.log(this.currentUserId,id,'ids');
+  
+  if (this.currentUserId === id) {
+    return {
+      'background': 'green',
+      'justify-content': 'start'
+    };
+  } else {
+    return  {
+      'background': 'yellow',
+      'justify-content': 'end'
+    };
+  }
+}
+onClickExit() {
+  this.socket.emit('leave-room', this.room_id, this.currentUserId);
+  this.videos = this.videos.filter(video => video.userId !== this.currentUserId)
+  this.router.navigate(['home']);
+}
+ngOnDestroy(): void {
+  if (this.myVideoStream) {
+    const tracks = this.myVideoStream.getTracks();
+    tracks.forEach((track:any) => {
+      track.stop(); // Stop each track
+    });
+    this.myVideoStream = null;
+  }
 }
 
 }

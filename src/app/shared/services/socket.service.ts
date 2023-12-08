@@ -17,6 +17,7 @@ export class SocketService {
     private http: HttpClient,
     private router: Router,
   ) {
+    // this.socket = io('https://video.evara.tk'); 
     this.socket = io('https://video.evara.tk'); 
     this.peer = new Peer(
       {

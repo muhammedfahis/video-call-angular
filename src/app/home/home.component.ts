@@ -14,8 +14,8 @@ export class HomeComponent implements OnInit {
 
   ngOnInit(): void {
     this.getRooms();
-    this.socketService.sendMessage('hi socket io');
-    console.log(this.socketService.onNewMessage());
+    // this.socketService.sendMessage('hi socket io');
+    // console.log(this.socketService.onNewMessage());
     
   }
 

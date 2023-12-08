@@ -36,17 +36,33 @@
         </div>
     </div>
 </div> -->
-<div class="video-grid">
-    <div *ngFor="let video of videos">
-      <span *ngIf="video.userId !== currentUserId; else currentUserVideoLabel">{{ video.userId }}</span>
-      <ng-template #currentUserVideoLabel>
-        <span>You</span>
-      </ng-template>
-      <video
-        [srcObject]="video.srcObject"
-        (loadedmetadata)="onLoadedMetadata($event)"
-        [muted]="video.muted"
-      >
-      </video>
+<div class="container" style="background-color: #000;">
+    <div class="action-buttons">
+        <button type="button" (click)="onClickExit()" class="exit-button">Exit</button>
     </div>
-  </div>
+    <div class="video-grid">
+        <div *ngFor="let video of videos">
+          <span *ngIf="video.userId !== currentUserId; else currentUserVideoLabel">{{ video.userId }}</span>
+          <ng-template #currentUserVideoLabel>
+            <span>You</span>
+          </ng-template>
+          <video
+            [srcObject]="video.srcObject"
+            (loadedmetadata)="onLoadedMetadata($event)"
+            [muted]="video.muted"
+          >
+          </video>
+        </div>
+      </div>
+      <div class="chatbox">
+        <div class="chats">
+            <ng-container *ngFor="let message of messages">
+                <div class="chat" [ngStyle]="getStyle(message.user)" >{{message.message}}</div>
+            </ng-container>
+        </div>
+        <div class="input-box">
+            <input type="text" [(ngModel)]="message" (keyup.enter)="onClickSendMessage()">
+            <button class="send-button" (click)="onClickSendMessage()">send</button>
+        </div>
+      </div>
+</div>
