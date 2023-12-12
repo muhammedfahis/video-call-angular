@@ -362,3 +362,12 @@ flex-wrap: wrap;
     border-radius: 5%;
     background-color: red;
   }
+  .share-button {
+    width: 100px;
+    height: 29px;
+    border-radius: 5%;
+    background-color: rgb(73, 225, 210);
+  }
+.action-buttons {
+    display: flex;
+}

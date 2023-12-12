@@ -39,14 +39,15 @@
 <div class="container" style="background-color: #000;">
     <div class="action-buttons">
         <button type="button" (click)="onClickExit()" class="exit-button">Exit</button>
+        <button type="button" (click)="shareScreen()" class="share-button">Share Screen</button>
     </div>
     <div class="video-grid">
         <div *ngFor="let video of videos">
-          <span *ngIf="video.userId !== currentUserId; else currentUserVideoLabel">{{ video.userId }}</span>
+          <span *ngIf="video.userId !== currentUserId; else currentUserVideoLabel" style="color: #fff;">{{ video.user }}</span>
           <ng-template #currentUserVideoLabel>
             <span>You</span>
           </ng-template>
-          <video
+          <video 
             [srcObject]="video.srcObject"
             (loadedmetadata)="onLoadedMetadata($event)"
             [muted]="video.muted"
