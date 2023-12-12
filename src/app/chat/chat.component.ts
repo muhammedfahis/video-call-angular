@@ -9,7 +9,8 @@ interface VideoElement {
   muted: boolean;
   srcObject: MediaStream;
   userId: string;
-  user: string | null
+  user: string | null;
+  name:string;
 }
 
 @Component({
@@ -100,8 +101,8 @@ export class ChatComponent implements OnInit,AfterViewInit,OnDestroy {
       .then((stream:any) => {
         this.myVideoStream = stream;
         this.addMyVideo(stream);
-        this.socket.on('user-connected', (peerId:any,userId:any) => {
-          this.connectToNewUser(peerId,userId, this.myVideoStream);
+        this.socket.on('user-connected', (peerId:any,userId:any,name:string) => {   
+          this.connectToNewUser(peerId,userId, this.myVideoStream,name);
         });
         this.socket.on('user-disconnected', (userId:any,peerId:any) => {
           console.log(`receiving user-disconnected event from ${userId}`)
@@ -114,7 +115,7 @@ export class ChatComponent implements OnInit,AfterViewInit,OnDestroy {
             this.remoteVideoStream = otherUserVideoStream;
             // if(!this.peerList.includes(call.metadata.peerId)){
               this.currentPeer = call.peerConnection;
-              this.addOtherUserVideo(call.metadata.peerId,call.metadata.userId,this.remoteVideoStream);
+              this.addOtherUserVideo(call.metadata.peerId,call.metadata.userId,this.remoteVideoStream,call.metadata.name);
               this.peerList.push(call.metadata.peerId)
             // }
           });
@@ -136,9 +137,9 @@ export class ChatComponent implements OnInit,AfterViewInit,OnDestroy {
         this.message = '';
       });
   }
- connectToNewUser (peerId:any,userId:any, stream:any) {
+ connectToNewUser (peerId:any,userId:any, stream:any,name:string) {
   const call = this.peer?.call(peerId, stream, {
-    metadata: { peerId,userId },
+    metadata: { peerId,userId,name },
   });
 
   if (!call) return;
@@ -153,7 +154,7 @@ export class ChatComponent implements OnInit,AfterViewInit,OnDestroy {
   call?.on('stream', (userVideoStream:any) => { 
     // if(!this.peerList.includes(peerId)){
       this.currentPeer = call.peerConnection;
-      this.addOtherUserVideo(peerId,userId, userVideoStream);
+      this.addOtherUserVideo(peerId,userId, userVideoStream,name);
       this.peerList.push(peerId)
     // }
   });
@@ -168,13 +169,14 @@ export class ChatComponent implements OnInit,AfterViewInit,OnDestroy {
       muted: true,
       srcObject: stream,
       userId: this.currentPeerId,
-      user:this.currentUserId
+      user:this.currentUserId,
+      name:'You'
     });
   }  else {
     existingUserVideo.srcObject = stream;
   }
 }
-addOtherUserVideo(peerId: string,userId:any, stream: MediaStream) {
+addOtherUserVideo(peerId: string,userId:any, stream: MediaStream,name:string) {
   const alreadyExisting = this.videos.find(video => video.userId === peerId);
   if (alreadyExisting) {
     // alreadyExisting.srcObject = stream;
@@ -184,7 +186,8 @@ addOtherUserVideo(peerId: string,userId:any, stream: MediaStream) {
     muted: true,
     srcObject: stream,
     userId:peerId,
-    user:userId
+    user:userId,
+    name:name
   });
 }
 

@@ -43,7 +43,7 @@
     </div>
     <div class="video-grid">
         <div *ngFor="let video of videos">
-          <span *ngIf="video.userId !== currentUserId; else currentUserVideoLabel" style="color: #fff;">{{ video.user }}</span>
+          <span *ngIf="video.userId !== currentUserId; else currentUserVideoLabel" style="color: #fff;">{{ video.name}}</span>
           <ng-template #currentUserVideoLabel>
             <span>You</span>
           </ng-template>
