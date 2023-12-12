@@ -12,6 +12,7 @@ export class SocketService {
 
   private socket: any;
   private peer!: Peer;
+  public peerConnections:any[] = []
 
   constructor(
     private http: HttpClient,
@@ -59,6 +60,12 @@ export class SocketService {
 
   getPeer(): Peer {
     return this.peer;
+  }
+  addPeer(peerId:string) {
+    this.peerConnections.push(peerId)
+  }
+  isPeerExists(peerId:string) {
+    return this.peerConnections.includes(peerId)
   }
   // Emit an event
   public sendMessage(message: string): void {

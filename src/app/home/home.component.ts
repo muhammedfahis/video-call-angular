@@ -10,6 +10,7 @@ import { Router } from '@angular/router';
 })
 export class HomeComponent implements OnInit {
   rooms:any[] = [];
+  socket:any;
   constructor(private socketService:SocketService,private userService:UserService,private router:Router) { }
 
   ngOnInit(): void {
@@ -44,6 +45,8 @@ export class HomeComponent implements OnInit {
     )
   }
   onClickRoom(room:any) {
+    // let socket = this.socketService.getSocket();
+    // socket.emit('join-room', room);
     this.router.navigate([`${room.room_id}`])
   }
 
