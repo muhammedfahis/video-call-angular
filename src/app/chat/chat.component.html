@@ -1,69 +1,29 @@
-<!-- <div class="header">
-    <div class="logo">
-        <h3>Video Chat</h3>
-    </div>
-</div>
-<div class="main">
-    <div class="main__left">
-        <div class="videos__group">
-            <div id="video-grid"></div>
-        </div>
-        <div class="options">
-            <div class="options__left">
-                <div class="options__button">
-                    <i class="fa fa-video-camera" aria-hidden="true"></i>
-                </div>
-                <div class="options__button">
-                    <i class="fa fa-microphone" aria-hidden="true"></i>
-                </div>
-            </div>
-            <div class="options__right">
-                <div class="options__button background__red">
-                    <i class="fa fa-phone" aria-hidden="true"></i>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="main__right">
-        <div class="main__chat_window">
-            <ul class="messages"></ul>
-        </div>
-        <div class="main__message_container">
-            <input id="chat_message" type="text" placeholder="Type message here...">
-            <div class="options__button">
-                <i class="fa fa-plus" aria-hidden="true"></i>
-            </div>
-        </div>
-    </div>
-</div> -->
+
 <div class="container" style="background-color: #000;">
     <div class="action-buttons">
-        <button type="button" (click)="onClickExit()" class="exit-button">Exit</button>
-        <button type="button" (click)="shareScreen()" class="share-button">Share Screen</button>
+        <button type="button" (click)="onLeaveRoom()"  class="exit-button">Exit</button>
+        <button type="button" (click)="onScreenShare()" class="share-button">Share Screen</button>
     </div>
-    <div class="video-grid">
-        <div *ngFor="let video of videos">
-          <span *ngIf="video.userId !== currentUserId; else currentUserVideoLabel" style="color: #fff;">{{ video.name}}</span>
-          <ng-template #currentUserVideoLabel>
-            <span>You</span>
-          </ng-template>
-          <video 
-            [srcObject]="video.srcObject"
-            (loadedmetadata)="onLoadedMetadata($event)"
-            [muted]="video.muted"
-          >
-          </video>
+    <div class="video-grid" id="video-grid">
+        <div  class="">
+            <h5 class="div-center" style="color:blue;"> {{user.name}}</h5>
+            <div class="div-center">
+                <video class="single-video" #localStream style="width:300px;" autoplay ></video>
+            </div>
         </div>
       </div>
       <div class="chatbox">
         <div class="chats">
             <ng-container *ngFor="let message of messages">
-                <div class="chat" [ngStyle]="getStyle(message.user)" >{{message.message}}</div>
+                <div class="user-name" [ngStyle]="getNameStyle(message.from_user_id)">{{message.from_user_id == currentUserId? 'You': message.from_user_name}}</div>
+                <div class="chat" [ngStyle]="getStyle(message.from_user_id)" >
+                    <div class="message">{{message.message}}</div>
+                </div>
             </ng-container>
         </div>
         <div class="input-box">
-            <input type="text" [(ngModel)]="message" (keyup.enter)="onClickSendMessage()">
-            <button class="send-button" (click)="onClickSendMessage()">send</button>
+            <input type="text" [(ngModel)]="message" (keyup.enter)="onSendMessage()"  >
+            <button class="send-button" (click)="onSendMessage()" >send</button>
         </div>
       </div>
 </div>

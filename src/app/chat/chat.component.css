@@ -52,7 +52,7 @@ video {
   height: 300px;
   border-radius: 1rem;
   margin: 0.5rem;
-  width: 400px;
+  width: 300px;
   object-fit: cover;
   transform: rotateY(180deg);
   -webkit-transform: rotateY(180deg);
@@ -154,7 +154,6 @@ video {
 
 #video-grid {
   display: flex;
-  justify-content: center;
   flex-wrap: wrap;
 }
 
@@ -180,10 +179,7 @@ video {
     flex: 1;
   }
 
-  video {
-    height: auto;
-    width: 100%;
-  }
+
 
   #showChat {
     display: flex;
@@ -241,16 +237,7 @@ align-items: center;
 padding: 1rem;
 background-color: var( — main-dark);
 }
-video {
-height: 300px;
-border-radius: 1rem;
-margin: 0.5rem;
-width: 400px;
-object-fit: cover;
-transform: rotateY(180deg);
--webkit-transform: rotateY(180deg);
--moz-transform: rotateY(180deg);
-}
+
 .options {
 padding: 1rem;
 display: flex;
@@ -297,12 +284,6 @@ border-radius: 5px;
 padding-left: 20px;
 border: none;
 }
-#video-grid {
-display: flex;
-justify-content: center;
-flex-wrap: wrap;
-
-}
 
 .video-grid {
     display: grid;
@@ -310,15 +291,10 @@ flex-wrap: wrap;
     grid-auto-rows: 300px;
     padding: 5%;
     background: #000;
-    height: 90vh;
+    height: 100%;
     width: 60%;
   }
   
-  video {
-    width: 90%;
-    height: 90%;
-    object-fit: cover;
-  }
   input {
     border-radius: 5px;
     border: 1px soid darkolivegreen;
@@ -332,12 +308,12 @@ flex-wrap: wrap;
   }
   .chatbox {
     position: relative;
-    height: 100vh;
     background-color: #2f80ec;
     width: 40%;
   }
   .container {
     display: flex;
+    min-height: 775px;
   }
   .send-button {
     padding: 5px;
@@ -346,15 +322,15 @@ flex-wrap: wrap;
     border-radius: 5px;
   }
   .chat {
-    width: 90%;
+    width: 92%;
     text-align: end;
     padding: 10px;
     background: yellow;
     border-radius: 5px;
     display: flex;
     align-items: center;
-    justify-content: end;
-    margin-bottom: 1%;
+    margin: 1% 2%;
+    justify-content: space-between;
   }
   .exit-button {
     width: 80px;
@@ -370,4 +346,18 @@ flex-wrap: wrap;
   }
 .action-buttons {
     display: flex;
+    position: absolute;
+}
+
+h5 {
+  color: #f6484a;
+}
+.single-video {
+  width: 300px;
+  aspect-ratio: 1/2;
+}
+.user-name {
+  font-size: 10px;
+    color: #ede6d3;
+    margin-top: 1%;
 }

@@ -1,24 +1,27 @@
-import { AfterViewInit, Component, OnDestroy, OnInit } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, HostListener, OnDestroy, OnInit, Renderer2, ViewChild } from '@angular/core';
 import { SocketService } from '../shared/services/socket.service';
 import { UserService } from '../shared/services/user.service';
 import { ActivatedRoute, Router } from '@angular/router';
+import { io } from 'socket.io-client';
+
 import Peer from 'peerjs';
 
 
 interface VideoElement {
   muted: boolean;
   srcObject: MediaStream;
-  userId: string;
-  user: string | null;
-  name:string;
+  userId: string | null;
+  name: string;
 }
+declare var $: any;
 
 @Component({
   selector: 'app-chat',
   templateUrl: './chat.component.html',
   styleUrls: ['./chat.component.css']
 })
-export class ChatComponent implements OnInit,AfterViewInit,OnDestroy {
+export class ChatComponent implements OnInit, AfterViewInit, OnDestroy {
+
   videoGrid: any;
   myVideoStream: MediaStream | null = null;
   socket: any;
@@ -32,11 +35,26 @@ export class ChatComponent implements OnInit,AfterViewInit,OnDestroy {
   currentUserId = '';
   message = '';
   messages: any[] = [];
-  peerList:string[] = [];
+  peerList: string[] = [];
   call: any;
-  currentPeer:any;
-  currentPeerId!:string
-  constructor(private socketService: SocketService, private userService: UserService,private route:ActivatedRoute,private router:Router) { 
+  currentPeer: any;
+  currentPeerId!: string
+  iceServers: any;
+  creater!: boolean;
+  userStream: any;
+  rtcPeerConnection!: RTCPeerConnection;
+  audioTrack: any;
+  mediaTrack: any;
+  rtpAudioSenders: any = [];
+  rtpVideoSenders: any = [];
+  users_connection: any[] = [];
+  remoteStream: any = [];
+  audioStream: any = [];
+  users_connectionID: any = [];
+  answers: any[] = []
+  connectedUsers: any = [];
+  @ViewChild('localStream') localVideoStream!: ElementRef<HTMLVideoElement>;
+  constructor(private socketService: SocketService, private userService: UserService, private route: ActivatedRoute, private router: Router, private renderer: Renderer2) {
     this.route.params.subscribe(params => {
       // Retrieve the 'id' parameter value
       this.room_id = params['id'];
@@ -44,235 +62,322 @@ export class ChatComponent implements OnInit,AfterViewInit,OnDestroy {
   }
 
 
+  @HostListener('window:beforeunload', ['$event'])
+  leaveRoom(event: Event) {
+    this.socket.emit('userLeaving', { user_id: this.currentUserId, meeting_id: this.room_id });
+  }
+
   ngOnInit(): void {
     this.user = JSON.parse(localStorage.getItem('user_Data') || '{}');
     this.currentUserId = this.user?._id || '';
-
+    this.socket = io('http://18.222.248.59:4000');
     this.initiateVideoCall();
   }
+  sdpFunction(data: any, to_connid: any) {
+    this.socket.emit('sdpProcess', {
+      message: data,
+      to_connid: to_connid
+    })
+  }
   ngAfterViewInit() {
-    
+
   }
   initiateVideoCall() {
-    this.socket =  this.socketService.getSocket();
-    this.peer = new Peer(
-      {
-        host: 'video.evara.tk',
-        // port:4000,
-        path: '/peerjs',
-        config: {
-          'iceServers': [
-            { url: 'stun:stun01.sipphone.com' },
-            { url: 'stun:stun.ekiga.net' },
-            { url: 'stun:stunserver.org' },
-            { url: 'stun:stun.softjoys.com' },
-            { url: 'stun:stun.voiparound.com' },
-            { url: 'stun:stun.voipbuster.com' },
-            { url: 'stun:stun.voipstunt.com' },
-            { url: 'stun:stun.voxgratia.org' },
-            { url: 'stun:stun.xten.com' },
-            {
-              url: 'turn:192.158.29.39:3478?transport=udp',
-              credential: 'JZEOEt2V3Qb0y27GRntt2u2PAYA=',
-              username: '28224511:1379330808'
-            },
-            {
-              url: 'turn:192.158.29.39:3478?transport=tcp',
-              credential: 'JZEOEt2V3Qb0y27GRntt2u2PAYA=',
-              username: '28224511:1379330808'
-            }
-          ]
-        },
-      
-        debug: 3
+    // this.socket = this.socketService.getSocket();
+    this.iceServers = this.socketService.getIceServers();
+    this.socket.on('connect', () => {
+      if (this.socket.connected) {
+        this.socket.emit('users_info_to_signaling_server', {
+          current_user_id: this.currentUserId,
+          current_user_name: this.user.name,
+          meeting_id: this.room_id
+        });
       }
+
+      this.processMedia()
+    }
     )
-    this.peer?.on('open', (id: any) => {
-      this.currentPeerId = id;
-      this.socket.emit('join-room', this.room_id, id, this.currentUserId, this.user.name);
-    }); 
-  
-    navigator.mediaDevices?.getUserMedia({
-      audio: true,
-      video: true,
+
+    this.socket.on('other_users_to_inform', (data: any) => {
+      this.addUser(data.other_user_name, data.connId, data.other_user_id);
+      this.createConnection(data.connId);
+    });
+    this.socket.on('newConnectionInformation', (other_users: any) => {
+      $('#video-grid .other').remove()
+      for (let i = 0; i < other_users.length; i++) {
+        this.addUser(other_users[i].user_name, other_users[i].connectionID, other_users[i].user_id);
+        this.createConnection(other_users[i].connectionID);
+      }
+    });
+    this.socket.on('sdpProcess', async (data: any) => {
+      await this.sdpProcess(data.message, data.from_connid)
+    });
+    this.socket.on('message',(data:any) => {
+      this.messages.push(data);
     })
-      .catch(err => console.log(err)
-      )
-      .then((stream:any) => {
-        this.myVideoStream = stream;
-        this.addMyVideo(stream);
-        this.socket.on('user-connected', (peerId:any,userId:any,name:string) => {   
-          this.connectToNewUser(peerId,userId, this.myVideoStream,name);
-        });
-        this.socket.on('user-disconnected', (userId:any,peerId:any) => {
-          console.log(`receiving user-disconnected event from ${userId}`)
-          this.videos = this.videos.filter(video => video.user !== userId);
-        });
-        this.peer?.on('call', (call:any) => {
-          this.call = call;   
-          call.answer(this.myVideoStream);
-          call.on('stream', (otherUserVideoStream: MediaStream) => {
-            this.remoteVideoStream = otherUserVideoStream;
-            if(!this.socketService.isPeerExists(call.metadata.peerId)){
-              this.currentPeer = call.peerConnection;
-              this.addOtherUserVideo(call.metadata.peerId,call.metadata.userId,this.remoteVideoStream,call.metadata.name);
-              this.socketService.addPeer(call.metadata.peerId)
-            }
-          });
-          call.on('error', (err:any) => {
-            console.error(err);
-          });
-          call.on('close', () => {
-            console.log(this.videos,call.metadata.userId,'log');
-            // this.videos = this.videos.filter((video) =>   video.userId !== call.metadata.peerId);
-            // this.socket.emit('leave-room', this.room_id,call.metadata.userId ,call.metadata.peerId);
-          });
-        });
-      }); 
-      this.socket.on('createMessage',(message:any,user:any) => {
-        this.messages.push({
-          user,
-          message
-        })
-        this.message = '';
-      });
-  }
- connectToNewUser (peerId:any,userId:any, stream:any,name:string) {
-  const call = this.peer?.call(peerId, stream, {
-    metadata: { peerId,userId,name },
-  });
-
-  if (!call) return;
-  this.call = call;
-  const video = document.createElement('video');
-  video.style.width = '300px';
-  video.style.height = '300px';
-  video.style.border = '1px solid red';
-  video.style.marginLeft = '10px';
-  video.style.marginRight = '10px';
-  video.setAttribute('id', peerId);
-  call?.on('stream', (userVideoStream:any) => { 
-    if(!this.socketService.isPeerExists(peerId)){
-      this.currentPeer = call.peerConnection;
-      this.addOtherUserVideo(peerId,userId, userVideoStream,name);
-      this.socketService.addPeer(peerId)
-    }
-  });
-  call.on('close', () => {
-    // this.videos = this.videos.filter((video) => video.userId !== peerId);
-  });
- }
- addMyVideo(stream: MediaStream) {
-  const existingUserVideo = this.videos.find(video => video.user === this.currentUserId && video.name == 'You');
-  if (!existingUserVideo) {
-    this.videos.push({
-      muted: false,
-      srcObject: stream,
-      userId: this.currentPeerId,
-      user:this.currentUserId,
-      name:'You'
-    });
-  }  else {
-    existingUserVideo.srcObject = stream;
-  }
-
-}
-addOtherUserVideo(peerId: string,userId:any, stream: MediaStream,name:string) {
-  const alreadyExisting = this.videos.find(video => video.user == userId && video.name === name); 
-  if (alreadyExisting) {
-    alreadyExisting.srcObject = stream;
-    return;
-  }
-  this.videos.push({
-    muted: false,
-    srcObject: stream,
-    userId:peerId,
-    user:userId,
-    name:name
-  });
-
-}
-
-onLoadedMetadata(event: Event) {
-  (event.target as HTMLVideoElement).play();
-}
-onClickSendMessage() {
-  this.socket.emit('message', this.message);
-}
-
-getStyle(id:string) {  
-  if (this.currentUserId === id) {
-    return {
-      'background': 'green',
-      'justify-content': 'start'
-    };
-  } else {
-    return  {
-      'background': 'yellow',
-      'justify-content': 'end'
-    };
-  }
-}
-onClickExit() {
-  // this.call.close();
-  this.socket.emit('leave-room', this.room_id, this.currentUserId);
-  this.router.navigate(['home']);
-}
-shareScreen() {
-  navigator.mediaDevices.getDisplayMedia({
-    audio: {
-      echoCancellation: true,
-      noiseSuppression: true
-    },
-  })
-  .then(stream => {
-    let videoTrack:any = stream.getVideoTracks()[0];
-    if (!videoTrack) {
-      console.error('No video track found in the screen sharing stream');
-      return;
-    }
-    videoTrack.onended = function() {
-      this.stopScreenShare();
-    }
-
-    let sender = this.currentPeer.getSenders().find((s: any) => {
-      return s.track && s.track.kind === videoTrack.kind;
+    this.socket.on('userDisconnected', (data: any) => {
+      console.log('User disconnected:', data.disconnectedUserId);
+      // Call a function to remove the video and audio elements
+      this.removeUser(data.disconnectedUserId);
     });
 
-    if (!sender) {
-      console.error('No suitable sender found to replace track');
-      return;
-    }
+  }
 
-    sender.replaceTrack(videoTrack)
-      .then(() => {
-        // Notify the user that screen sharing has started
-        console.log('Screen sharing started');
+  addUser(other_user_name: any, connId: any, user_id: any) {
+    const existingUser = this.connectedUsers.filter((user: any) => user.user_id === user_id);
+    if (existingUser.length) {
+      existingUser.forEach((user: any) => {
+        $('#video-grid #' + user.connId).remove()
       })
-      .catch((err:any) => {
-        console.error('Error replacing track:', err);
-      });
-  })
-  .catch(err => {
-    console.error('Error accessing screen sharing:', err);
-    // Notify the user about the error
-  });
-}
-stopScreenShare() {
-  let videoTrack = this.myVideoStream?.getVideoTracks()[0];
-  let sender = this.currentPeer.getSenders().find((s:any) => {
-    return s.track.kind == videoTrack?.kind
-  });
-  sender.replaceTrack(videoTrack)
-}
-ngOnDestroy(): void {
-  if (this.myVideoStream) {
-    this.myVideoStream.getTracks().forEach(track => {
-      track.stop();
-      // track.enabled = false;
-    });
-    // this.call?.close();
-    this.socket.emit('leave-room', this.room_id, this.currentUserId,this.call.peer);
+
+    } else {
+      this.connectedUsers.push({ user_id: user_id, connId: connId });
+    }
+    $('#video-grid').append(`
+
+    <div id="`+ connId + `" class="remote-user other div-center-column">
+        <h5 class="div-center" style="color:red;margin:0">`+ other_user_name + `</h5>
+        <div class="div-center">
+            <video class="single-video" style="width:300px;-moz-transform: rotateY(180deg); -webkit-transform: rotateY(180deg);transform: rotateY(180deg);object-fit: cover;margin: 0.5rem;height:300px;border-radius:1rem;" autoplay id="video_`+ connId + `"></video>
+            <audio autoplay id="audio_`+ connId + `"/>
+        </div>
+    </div>
+    
+    `)
   }
-}
+  async sdpProcess(msg: any, from_connid: any) {
+
+    let message = JSON.parse(msg);
+
+    if (message.answer) {
+      this.answers.push(message.answer)
+      await this.users_connection[from_connid].setRemoteDescription(new RTCSessionDescription(message.answer));
+    } else if (message.offer) {
+      if (!this.users_connection[from_connid]) {
+        await this.createConnection(from_connid)
+      }
+      await this.users_connection[from_connid].setRemoteDescription(new RTCSessionDescription(message.offer));
+      let answer = await this.users_connection[from_connid].createAnswer();
+      await this.users_connection[from_connid].setLocalDescription(answer);
+      this.sdpFunction(JSON.stringify({
+        "answer": answer
+      }), from_connid)
+    } else if (message.iceCandidate) {
+      if (!this.users_connection[from_connid]) {
+        await this.createConnection(from_connid)
+      }
+      try {
+        if (this.users_connection[from_connid].remoteDescription) {
+          await this.users_connection[from_connid].addIceCandidate(message.iceCandidate)
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    }
+  }
+  async createConnection(connId: any) {
+    console.log('createConnection');
+
+    var connection = new RTCPeerConnection(this.iceServers);
+    connection.onnegotiationneeded = async (event) => {
+      await this.createOffer(connId)
+    }
+    connection.onicecandidate = (event: any) => {
+
+      if (event.candidate) {
+        this.sdpFunction(JSON.stringify({
+          'iceCandidate': event.candidate
+        }), connId)
+      }
+    }
+    connection.ontrack = (event) => {
+
+      if (!this.remoteStream[connId]) {
+        this.remoteStream[connId] = new MediaStream()
+      }
+      if (!this.audioStream[connId]) {
+        this.audioStream[connId] = new MediaStream()
+      }
+      if (event.track.kind === 'video') {
+        this.remoteStream[connId].getTracks().forEach((t: any) => this.remoteStream[connId].removeTrack(t));
+        this.remoteStream[connId].addTrack(event.track);
+        let remoteVideoDiv: any = document.getElementById('video_' + connId);
+
+        remoteVideoDiv.srcObject = null;
+        remoteVideoDiv.srcObject = this.remoteStream[connId];
+        remoteVideoDiv.load()
+      } else if (event.track.kind === 'audio') {
+        this.audioStream[connId].getTracks().forEach((t: any) => this.audioStream[connId].removeTrack(t));
+        this.audioStream[connId].addTrack(event.track);
+        let remoteAudioDiv: any = document.getElementById('audio_' + connId);
+        remoteAudioDiv.srcObject = null;
+        remoteAudioDiv.srcObject = this.audioStream[connId];
+        remoteAudioDiv.load()
+      }
+    }
+
+    this.users_connectionID[connId] = connId;
+    this.users_connection[connId] = connection;
+    this.updateMediaSenders(this.mediaTrack, this.rtpVideoSenders);
+
+    return connection
+  }
+  async createOffer(connId: any) {
+    var connection = this.users_connection[connId];
+    var offer = await connection.createOffer();
+    await connection.setLocalDescription(offer);
+    this.sdpFunction(JSON.stringify({
+      'offer': connection.localDescription
+    }), connId)
+
+  }
+
+  async processMedia() {
+    try {
+      let vStream: any = null;
+      let aStream: any = null;
+      vStream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          width: 720,
+          height: 480
+        },
+        audio: false
+      });
+      aStream = await navigator.mediaDevices.getUserMedia({
+        video: false,
+        audio: true
+      });
+      this.audioTrack = aStream?.getAudioTracks()[0];
+      this.audioTrack.enable = true;
+      this.updateMediaSenders(this.audioTrack, this.rtpAudioSenders);
+
+      this.mediaTrack = vStream.getVideoTracks()[0];
+      const videoElement = this.localVideoStream.nativeElement;
+      videoElement.srcObject = new MediaStream([this.mediaTrack])
+      this.updateMediaSenders(this.mediaTrack, this.rtpVideoSenders);
+    } catch (error) {
+      console.log(error);
+    }
+  }
+  updateMediaSenders(track: any, rtpSenders: any) {
+    for (let con_id in this.users_connection) {
+      let connections = this.users_connection[con_id];
+      if (connections && (connections.connectionState === 'new' ||
+        connections.connectionState === 'connecting' ||
+        connections.connectionState === 'connected')) {
+        if (track) {
+          if (rtpSenders[con_id] && rtpSenders[con_id].track) {
+            rtpSenders[con_id].replaceTrack(track)
+          } else {
+            rtpSenders[con_id] = this.users_connection[con_id].addTrack(track)
+          }
+        }
+
+      }
+
+    }
+
+  }
+
+  removeUser(disconnectedUserId: any) {
+    console.log('inside ');
+
+    const connId = this.users_connection[disconnectedUserId];
+    if (connId) {
+      console.log('inside if');
+
+      // Remove video and audio elements from the DOM
+      const videoElement = document.getElementById('video_' + disconnectedUserId);
+      const audioElement = document.getElementById('audio_' + disconnectedUserId);
+      const divElement = document.getElementById(disconnectedUserId);
+
+      if (videoElement) {
+        videoElement.remove();
+      }
+      if (divElement) {
+        divElement.remove();
+      }
+
+      if (audioElement) {
+        audioElement.remove();
+      }
+
+      // Remove the connection object from the local storage
+      delete this.users_connection[disconnectedUserId];
+      delete this.users_connectionID[disconnectedUserId];
+    }
+  }
+
+
+  getStyle(id: string) {
+    if (this.currentUserId === id) {
+      return {
+        'background': 'green',
+        'justify-content': 'start'
+      };
+    } else {
+      return {
+        'background': 'yellow',
+        'justify-content': 'end'
+      };
+    }
+  }
+  getNameStyle(id:string) {
+    if (this.currentUserId === id) {
+      return {
+        'text-align': 'end',
+        'margin-right': '3%'
+      };
+    } else {
+      return {
+        'text-align': 'start',
+        'margin-left': '2%'
+      };
+    }
+  }
+  private stopMediaTracks(): void {
+
+    if (this.audioTrack) {
+      this.audioTrack.stop();
+      this.audioTrack = null;
+    }
+
+    if (this.mediaTrack) {
+      this.mediaTrack.stop();
+      this.mediaTrack = null;
+    }
+  }
+  onLeaveRoom() {
+    this.socket.emit('userLeaving', { user_id: this.currentUserId, meeting_id: this.room_id });
+    this.stopMediaTracks();
+    this.router.navigate(['home'])
+  }
+  async onScreenShare() {
+
+    const screenStream: any = await navigator.mediaDevices.getDisplayMedia({
+      video: true,
+      audio: true,
+    });
+
+    // Assuming you have separate video elements for webcam and screen sharing
+    const screenVideoElement = this.localVideoStream.nativeElement;
+    screenVideoElement.srcObject = screenStream;
+
+    // Add the screen-sharing track to the media senders
+    const screenTrack = screenStream.getVideoTracks()[0];
+    this.updateMediaSenders(screenTrack, this.rtpVideoSenders);
+  }
+  onSendMessage() {
+    this.socket.emit('message',{
+      from_user_id: this.currentUserId,
+      from_user_name:this.user.name,
+      message: this.message,
+      room:this.room_id
+    });
+    this.message = '';
+  }
+  ngOnDestroy(): void {
+    this.socket.emit('userLeaving', { user_id: this.currentUserId, meeting_id: this.room_id });
+    this.stopMediaTracks();
+  }
 }

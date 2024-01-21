@@ -3,7 +3,7 @@ import { io } from 'socket.io-client';
 import { Observable } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import Peer from 'peerjs';
+
 
 @Injectable({
   providedIn: 'root'
@@ -11,56 +11,32 @@ import Peer from 'peerjs';
 export class SocketService {
 
   private socket: any;
-  private peer!: Peer;
+  private icServers:any;
   public peerConnections:any[] = []
 
   constructor(
     private http: HttpClient,
     private router: Router,
   ) {
-    this.socket = io('https://video.evara.tk'); 
+    // this.socket = io('https://video.evara.tk'); 
     // this.socket = io('http://localhost:4000'); 
-    this.peer = new Peer(
-      {
-        host: '127.0.0.1',
-        port:4000,
-        path: '/peerjs',
-        config: {
-          'iceServers': [
-            { url: 'stun:stun01.sipphone.com' },
-            { url: 'stun:stun.ekiga.net' },
-            { url: 'stun:stunserver.org' },
-            { url: 'stun:stun.softjoys.com' },
-            { url: 'stun:stun.voiparound.com' },
-            { url: 'stun:stun.voipbuster.com' },
-            { url: 'stun:stun.voipstunt.com' },
-            { url: 'stun:stun.voxgratia.org' },
-            { url: 'stun:stun.xten.com' },
-            {
-              url: 'turn:192.158.29.39:3478?transport=udp',
-              credential: 'JZEOEt2V3Qb0y27GRntt2u2PAYA=',
-              username: '28224511:1379330808'
-            },
-            {
-              url: 'turn:192.158.29.39:3478?transport=tcp',
-              credential: 'JZEOEt2V3Qb0y27GRntt2u2PAYA=',
-              username: '28224511:1379330808'
-            }
-          ]
-        },
-      
-        debug: 3
-      }
-    )
+    this.icServers =  {
+      'iceServers':[
+        {"url":'stun:stun2.l.google.com:19302'}
+    ]
+  }
+    
+  }
+
+  getIceServers() {
+    return this.icServers;
   }
  
   getSocket(): any{
     return this.socket;
   }
 
-  getPeer(): Peer {
-    return this.peer;
-  }
+  
   addPeer(peerId:string) {
     this.peerConnections.push(peerId)
   }
