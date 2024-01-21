@@ -70,7 +70,7 @@ export class ChatComponent implements OnInit, AfterViewInit, OnDestroy {
   ngOnInit(): void {
     this.user = JSON.parse(localStorage.getItem('user_Data') || '{}');
     this.currentUserId = this.user?._id || '';
-    this.socket = io('http://18.222.248.59:4000');
+    this.socket = io('https://video-call-nodejs-seven.vercel.app');
     this.initiateVideoCall();
   }
   sdpFunction(data: any, to_connid: any) {

@@ -1,4 +1,4 @@
 export const environment = {
   production: true,
-  api:'http://18.222.248.59'
+  api:'https://video-call-nodejs-seven.vercel.app'
 };

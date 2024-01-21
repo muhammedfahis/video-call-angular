@@ -4,7 +4,7 @@
 
 export const environment = {
   production: false,
-  api:'http://18.222.248.59'
+  api:'https://video-call-nodejs-seven.vercel.app'
   // api:'https://video.evara.tk'
 };
 
