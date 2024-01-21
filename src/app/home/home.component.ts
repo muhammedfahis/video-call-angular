@@ -15,7 +15,7 @@ export class HomeComponent implements OnInit {
 
   ngOnInit(): void {
     this.getRooms();
-    this.socket = this.socketService.getSocket();
+    // this.socket = this.socketService.getSocket();
     // window.location.reload();
     // this.socketService.sendMessage('hi socket io');
     // console.log(this.socketService.onNewMessage());
@@ -46,8 +46,6 @@ export class HomeComponent implements OnInit {
     )
   }
   onClickRoom(room:any) {
-    // let socket = this.socketService.getSocket();
-    this.socket.emit('join',room.room_id);
     this.router.navigate([`${room.room_id}`])
   }
 
