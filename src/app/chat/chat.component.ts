@@ -72,6 +72,7 @@ export class ChatComponent implements OnInit, AfterViewInit, OnDestroy {
     this.currentUserId = this.user?._id || '';
     const socketOptions = {
       transports: ['websocket'],
+      debug: true
     };
     this.socket = io('https://video-call-nodejs-seven.vercel.app',socketOptions);
     this.initiateVideoCall();
