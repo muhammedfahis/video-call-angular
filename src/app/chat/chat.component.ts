@@ -22,27 +22,13 @@ declare var $: any;
 })
 export class ChatComponent implements OnInit, AfterViewInit, OnDestroy {
 
-  videoGrid: any;
-  myVideoStream: MediaStream | null = null;
   socket: any;
   room_id: any;
-  peer: Peer | null = null;
-  joined = false;
-  peerId: any;
   user: any;
-  videos: VideoElement[] = [];
-  remoteVideoStream: MediaStream | null = null;
   currentUserId = '';
   message = '';
   messages: any[] = [];
-  peerList: string[] = [];
-  call: any;
-  currentPeer: any;
-  currentPeerId!: string
   iceServers: any;
-  creater!: boolean;
-  userStream: any;
-  rtcPeerConnection!: RTCPeerConnection;
   audioTrack: any;
   mediaTrack: any;
   rtpAudioSenders: any = [];
@@ -71,7 +57,7 @@ export class ChatComponent implements OnInit, AfterViewInit, OnDestroy {
     this.user = JSON.parse(localStorage.getItem('user_Data') || '{}');
     this.currentUserId = this.user?._id || '';
   
-    this.socket = io('https://video-call-nodejs-seven.vercel.app');
+    this.socket = io('https://chat.thanseef.in');
     this.initiateVideoCall();
   }
   sdpFunction(data: any, to_connid: any) {
@@ -149,31 +135,31 @@ export class ChatComponent implements OnInit, AfterViewInit, OnDestroy {
   async sdpProcess(msg: any, from_connid: any) {
 
     let message = JSON.parse(msg);
-
-    if (message.answer) {
-      this.answers.push(message.answer)
-      await this.users_connection[from_connid].setRemoteDescription(new RTCSessionDescription(message.answer));
-    } else if (message.offer) {
-      if (!this.users_connection[from_connid]) {
-        await this.createConnection(from_connid)
-      }
-      await this.users_connection[from_connid].setRemoteDescription(new RTCSessionDescription(message.offer));
-      let answer = await this.users_connection[from_connid].createAnswer();
-      await this.users_connection[from_connid].setLocalDescription(answer);
-      this.sdpFunction(JSON.stringify({
-        "answer": answer
-      }), from_connid)
-    } else if (message.iceCandidate) {
-      if (!this.users_connection[from_connid]) {
-        await this.createConnection(from_connid)
-      }
-      try {
+    try {
+      if (message.answer) {
+        this.answers.push(message.answer)
+        await this.users_connection[from_connid].setRemoteDescription(new RTCSessionDescription(message.answer));
+      } else if (message.offer) {
+        if (!this.users_connection[from_connid]) {
+          await this.createConnection(from_connid)
+        }
+        await this.users_connection[from_connid].setRemoteDescription(new RTCSessionDescription(message.offer));
+        let answer = await this.users_connection[from_connid].createAnswer();
+        await this.users_connection[from_connid].setLocalDescription(answer);
+        this.sdpFunction(JSON.stringify({
+          "answer": answer
+        }), from_connid)
+      } else if (message.iceCandidate) {
+        if (!this.users_connection[from_connid]) {
+          await this.createConnection(from_connid)
+        }
         if (this.users_connection[from_connid].remoteDescription) {
           await this.users_connection[from_connid].addIceCandidate(message.iceCandidate)
         }
-      } catch (error) {
-        console.log(error);
+    
       }
+    } catch (error) {
+      console.log(error);
     }
   }
   async createConnection(connId: any) {

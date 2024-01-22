@@ -4,8 +4,8 @@
 
 export const environment = {
   production: false,
-  api:'https://video-call-nodejs-seven.vercel.app'
-  // api:'https://video.evara.tk'
+  // api:'https://video-call-nodejs-seven.vercel.app'
+  api:'https://chat.thanseef.in'
 };
 
 /*
