@@ -5,7 +5,7 @@
 export const environment = {
   production: false,
   // api:'https://video-call-nodejs-seven.vercel.app'
-  api:'https://chat.thanseef.in'
+  api:'http://localhost:4000'
 };
 
 /*

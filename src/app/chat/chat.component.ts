@@ -57,7 +57,7 @@ export class ChatComponent implements OnInit, AfterViewInit, OnDestroy {
     this.user = JSON.parse(localStorage.getItem('user_Data') || '{}');
     this.currentUserId = this.user?._id || '';
   
-    this.socket = io('https://chat.thanseef.in');
+    this.socket = io('http://localhost:4000');
     this.initiateVideoCall();
   }
   sdpFunction(data: any, to_connid: any) {

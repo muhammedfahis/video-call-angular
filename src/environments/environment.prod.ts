@@ -1,4 +1,4 @@
 export const environment = {
   production: true,
-  api:'https://chat.thanseef.in'
+  api:'http://localhost:4000'
 };
