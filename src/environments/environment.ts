@@ -4,8 +4,7 @@
 
 export const environment = {
   production: false,
-  // api:'https://video-call-nodejs-seven.vercel.app'
-  api:'http://18.222.248.59:4000'
+  api:'https://fayis.online'
 };
 
 /*
